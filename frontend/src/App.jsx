@@ -163,6 +163,12 @@ export default function App() {
         <TabPanels>
           {/* === Dashboard === */}
           <TabPanel>
+            {/* 🟡 Tampilkan saldo di atas */}
+            <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" mb={4}>
+              <Text>Kas Awal: <b>Rp {formatCurrency(initialCash)}</b></Text>
+              <Text>Saldo Sekarang: <b>Rp {formatCurrency(totalCash())}</b></Text>
+            </Box>
+
             <Stack direction={{ base: "column", md: "row" }} spacing={6} mt={4}>
               <Box flex="1">
                 <Heading size="sm" mb={2}>📋 Pembayaran Terakhir</Heading>
@@ -212,9 +218,7 @@ export default function App() {
                 </Table>
               </Box>
             </Stack>
-
           </TabPanel>
-
           {/* === Warga === */}
           <TabPanel>
             <Heading size="md" mb={4}>Data Warga</Heading>
