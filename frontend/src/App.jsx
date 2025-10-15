@@ -8,8 +8,8 @@ import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 
-
-const API_URL = 'http://localhost:4000'; // sesuaikan saat deploy
+// 🟢 ambil URL backend dari environment Netlify
+const API_URL = import.meta.env.VITE_API_URL;
 
 function formatCurrency(n) {
   return new Intl.NumberFormat('id-ID').format(Number(n || 0));
