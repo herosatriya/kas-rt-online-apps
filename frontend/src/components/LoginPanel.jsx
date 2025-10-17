@@ -1,13 +1,10 @@
-import { Box, Button, Heading, Input, Stack, Text, useToast } from '@chakra-ui/react';
+import { Box, Heading, Stack, Input, Button, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-export default function LoginPanel({ setAuth }) {
+export default function LoginPanel({ setAuth, API_URL, toast }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const toast = useToast();
 
   async function doLogin() {
     try {
@@ -31,7 +28,7 @@ export default function LoginPanel({ setAuth }) {
           <Button colorScheme="teal" onClick={doLogin}>Login</Button>
         </Stack>
         <Text fontSize="sm" mt={3} color="gray.500">
-          Admin awal: <b>admin/admin123</b> • Viewer: <b>warga/warga123</b>
+          Admin: <b>admin/admin123</b> • Viewer: <b>warga/warga123</b>
         </Text>
       </Box>
     </Box>

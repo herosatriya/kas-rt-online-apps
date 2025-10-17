@@ -1,62 +1,28 @@
+import { Table, Thead, Tbody, Tr, Th, Td, Button, Stack, Input } from '@chakra-ui/react';
 import { useState } from 'react';
-import {
-  Button, Input, Stack, Table, Tbody, Td, Th, Thead, Tr
-} from '@chakra-ui/react';
 import axios from 'axios';
-import { generateId, formatCurrency } from '../utils/formatUtils.js';
+import { formatCurrency } from '../utils/formatUtils';
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-export default function ExpensesTab({ expenses, setExpenses }) {
-  const [newExpense, setNewExpense] = useState({
-    date: '',
-    amount: '',
-    note: ''
-  });
+export default function ExpensesTab({ expenses, setExpenses, API_URL, toast }) {
+  const [newExpense, setNewExpense] = useState({ date: '', amount: '', note: '' });
 
   function addExpense() {
-    const e = {
-      id: generateId('e_'),
-      ...newExpense,
-      amount: Number(newExpense.amount || 0)
-    };
+    if (!newExpense.date || !newExpense.amount) return;
+    const e = { id: `e_${Date.now()}`, ...newExpense, amount: Number(newExpense.amount || 0) };
     axios.post(`${API_URL}/expenses`, e).then(() => {
       setExpenses([...expenses, e]);
       setNewExpense({ date: '', amount: '', note: '' });
+      toast({ title: 'Pengeluaran tercatat ✅', status: 'success', duration: 2000 });
     });
   }
 
   return (
     <>
-      <Stack
-        direction={{ base: 'column', md: 'row' }}
-        spacing={2}
-        mb={4}
-        align="stretch"
-      >
-        <Input
-          type="date"
-          value={newExpense.date}
-          onChange={e => setNewExpense({ ...newExpense, date: e.target.value })}
-        />
-        <Input
-          placeholder="Jumlah (Rp)"
-          type="number"
-          value={newExpense.amount}
-          onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })}
-        />
-        <Input
-          placeholder="Catatan"
-          value={newExpense.note}
-          onChange={e => setNewExpense({ ...newExpense, note: e.target.value })}
-        />
-        <Button
-          colorScheme="teal"
-          minW={{ base: '100%', md: '120px' }}
-          onClick={addExpense}
-        >
-          Simpan
-        </Button>
+      <Stack direction={{ base: 'column', md: 'row' }} spacing={2} mb={4}>
+        <Input type="date" value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })} />
+        <Input placeholder="Jumlah (Rp)" type="number" value={newExpense.amount} onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })} />
+        <Input placeholder="Catatan" value={newExpense.note} onChange={e => setNewExpense({ ...newExpense, note: e.target.value })} />
+        <Button colorScheme="teal" minW={{ base: '100%', md: '120px' }} onClick={addExpense}>Simpan</Button>
       </Stack>
 
       <Table variant="striped" size="sm">
