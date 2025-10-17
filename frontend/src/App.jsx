@@ -76,6 +76,15 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // setelah state initialCash dan warningThreshold
+  useEffect(() => {
+    axios.get(`${API_URL}/settings`).then(res => {
+      setInitialCash(res.data.initial_cash);
+      setWarningThreshold(res.data.warning_threshold);
+    });
+  }, []);
+
+
   // 💵 Hitung total saldo kas
   const totalCash = () => {
     const totalP = payments.reduce((s, p) => s + Number(p.amount || 0), 0);

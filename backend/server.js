@@ -125,6 +125,34 @@ app.delete('/expenses/:id', authMiddleware, async (req, res) => {
   res.json({ message: 'Expense deleted' });
 });
 
+// 🆕 Settings
+app.get("/settings", async (req, res) => {
+  try {
+    const settings = await db("settings").where({ id: 1 }).first();
+    res.json(settings);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+});
+
+app.put("/settings", async (req, res) => {
+  const { initial_cash, warning_threshold } = req.body;
+  try {
+    await db("settings")
+      .where({ id: 1 })
+      .update({
+        initial_cash: initial_cash || 0,
+        warning_threshold: warning_threshold || 0
+      });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
+
 // =============================
 // 🟢 Start Server
 // =============================

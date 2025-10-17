@@ -1,60 +1,61 @@
-import db from './db.js';
+import knex from "./db.js";
 
 async function migrate() {
-  console.log('🚀 Running migrations...');
+  // Tabel residents
+  const hasResidents = await knex.schema.hasTable("residents");
+  if (!hasResidents) {
+    await knex.schema.createTable("residents", table => {
+      table.string("id").primary();
+      table.string("name");
+      table.string("address");
+      table.string("phone");
+    });
+    console.log("✅ Table residents created");
+  }
 
-  await db.schema.hasTable('users').then(async (exists) => {
-    if (!exists) {
-      await db.schema.createTable('users', (table) => {
-        table.increments('id').primary();
-        table.string('username').unique();
-        table.string('password');
-        table.string('role'); // admin / viewer
-      });
-      console.log('✅ users table created');
-    }
-  });
+  // Tabel payments
+  const hasPayments = await knex.schema.hasTable("payments");
+  if (!hasPayments) {
+    await knex.schema.createTable("payments", table => {
+      table.string("id").primary();
+      table.string("residentId");
+      table.string("date");
+      table.string("type");
+      table.decimal("amount");
+      table.string("note");
+    });
+    console.log("✅ Table payments created");
+  }
 
-  await db.schema.hasTable('residents').then(async (exists) => {
-    if (!exists) {
-      await db.schema.createTable('residents', (table) => {
-        table.string('id').primary();
-        table.string('name');
-        table.string('address');
-        table.string('phone');
-      });
-      console.log('✅ residents table created');
-    }
-  });
+  // Tabel expenses
+  const hasExpenses = await knex.schema.hasTable("expenses");
+  if (!hasExpenses) {
+    await knex.schema.createTable("expenses", table => {
+      table.string("id").primary();
+      table.string("date");
+      table.decimal("amount");
+      table.string("note");
+    });
+    console.log("✅ Table expenses created");
+  }
 
-  await db.schema.hasTable('payments').then(async (exists) => {
-    if (!exists) {
-      await db.schema.createTable('payments', (table) => {
-        table.string('id').primary();
-        table.string('residentId');
-        table.string('type');
-        table.date('date');
-        table.decimal('amount');
-        table.string('note');
-      });
-      console.log('✅ payments table created');
-    }
-  });
+  // 🆕 Tabel settings
+  const hasSettings = await knex.schema.hasTable("settings");
+  if (!hasSettings) {
+    await knex.schema.createTable("settings", table => {
+      table.increments("id").primary();
+      table.decimal("initial_cash").defaultTo(0);
+      table.decimal("warning_threshold").defaultTo(100000);
+    });
+    await knex("settings").insert({ id: 1, initial_cash: 0, warning_threshold: 100000 });
+    console.log("✅ Table settings created and initialized");
+  }
 
-  await db.schema.hasTable('expenses').then(async (exists) => {
-    if (!exists) {
-      await db.schema.createTable('expenses', (table) => {
-        table.string('id').primary();
-        table.date('date');
-        table.decimal('amount');
-        table.string('note');
-      });
-      console.log('✅ expenses table created');
-    }
-  });
-
-  console.log('🎉 All migrations complete!');
+  console.log("🚀 Migration completed");
   process.exit(0);
 }
 
-migrate();
+migrate().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
