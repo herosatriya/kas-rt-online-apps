@@ -1,6 +1,36 @@
-import { Box, Input, Stack, Text } from '@chakra-ui/react';
+import React from "react";
+import { Box, Input, Stack, Text, useToast } from "@chakra-ui/react";
+import axios from "axios";
 
-export default function SettingsTab({ initialCash, setInitialCash, warningThreshold, setWarningThreshold }) {
+export default function SettingsTab({
+  initialCash,
+  setInitialCash,
+  warningThreshold,
+  setWarningThreshold,
+  API_URL
+}) {
+  const toast = useToast();
+
+  const saveSettings = async (field, value) => {
+    try {
+      await axios.put(`${API_URL}/settings`, {
+        initial_cash: field === "initialCash" ? value : initialCash,
+        warning_threshold: field === "warningThreshold" ? value : warningThreshold
+      });
+      toast({
+        title: "Pengaturan tersimpan",
+        status: "success",
+        duration: 1500,
+      });
+    } catch (err) {
+      toast({
+        title: "Gagal menyimpan pengaturan",
+        status: "error",
+        duration: 1500,
+      });
+    }
+  };
+
   return (
     <Stack spacing={4}>
       <Box>
@@ -8,7 +38,11 @@ export default function SettingsTab({ initialCash, setInitialCash, warningThresh
         <Input
           type="number"
           value={initialCash}
-          onChange={e => setInitialCash(e.target.value)}
+          onChange={e => {
+            const val = e.target.value;
+            setInitialCash(val);
+            saveSettings("initialCash", val);
+          }}
         />
       </Box>
       <Box>
@@ -16,7 +50,11 @@ export default function SettingsTab({ initialCash, setInitialCash, warningThresh
         <Input
           type="number"
           value={warningThreshold}
-          onChange={e => setWarningThreshold(e.target.value)}
+          onChange={e => {
+            const val = e.target.value;
+            setWarningThreshold(val);
+            saveSettings("warningThreshold", val);
+          }}
         />
       </Box>
     </Stack>
