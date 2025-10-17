@@ -1,151 +1,133 @@
-import express from 'express'
-import cors from 'cors'
-import sqlite3 from 'sqlite3'
-import { open } from 'sqlite'
-import jwt from 'jsonwebtoken'
-import bcrypt from 'bcryptjs'
-import dotenv from 'dotenv'
+// =============================
+// ✅ server.js (PostgreSQL)
+// =============================
+import express from 'express';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+import db from './db.js';
 
-dotenv.config()
+dotenv.config();
 
-const app = express()
-app.use(cors())
-app.use(express.json())
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-const dbPromise = open({
-  filename: './data.db',
-  driver: sqlite3.Database
-})
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me'
+// =============================
+// ✅ Tes koneksi DB
+// =============================
+db.raw('SELECT 1+1 AS result')
+  .then(() => console.log('✅ PostgreSQL connected'))
+  .catch((err) => console.error('❌ DB connection failed:', err));
 
-// ========= Init DB =========
-;(async () => {
-  const db = await dbPromise
-  await db.exec(`CREATE TABLE IF NOT EXISTS residents (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    address TEXT,
-    phone TEXT
-  )`)
-  await db.exec(`CREATE TABLE IF NOT EXISTS payments (
-    id TEXT PRIMARY KEY,
-    residentId TEXT,
-    date TEXT,
-    type TEXT,
-    amount REAL,
-    note TEXT
-  )`)
-  await db.exec(`CREATE TABLE IF NOT EXISTS expenses (
-    id TEXT PRIMARY KEY,
-    date TEXT,
-    amount REAL,
-    note TEXT
-  )`)
-  await db.exec(`CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('admin','viewer'))
-  )`)
+// =============================
+// 🧑 Auth Middleware
+// =============================
+function authMiddleware(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
-  // Seed user jika kosong
-  const row = await db.get('SELECT COUNT(*) as c FROM users')
-  if (row.c === 0) {
-    const adminHash = await bcrypt.hash(process.env.DEFAULT_ADMIN_PASSWORD || 'admin123', 10)
-    const viewerHash = await bcrypt.hash('warga123', 10)
-    await db.run('INSERT INTO users (id, username, password, role) VALUES (?,?,?,?)',
-      ['u_admin', 'admin', adminHash, 'admin'])
-    await db.run('INSERT INTO users (id, username, password, role) VALUES (?,?,?,?)',
-      ['u_viewer', 'warga', viewerHash, 'viewer'])
-    console.log('✅ Seed users: admin/admin123 & warga/warga123')
-  }
-})()
-
-// ========= Auth helpers =========
-function authRequired(req, res, next) {
-  const hdr = req.headers.authorization || ''
-  const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null
-  if (!token) return res.status(401).json({ message: 'Unauthorized' })
   try {
-    req.user = jwt.verify(token, JWT_SECRET)
-    next()
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
   } catch {
-    return res.status(401).json({ message: 'Invalid token' })
+    return res.status(401).json({ message: 'Invalid token' });
   }
 }
 
-function adminOnly(req, res, next) {
-  if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Forbidden' })
-  next()
-}
-
-// ========= Auth routes =========
+// =============================
+// 👤 Login
+// =============================
 app.post('/auth/login', async (req, res) => {
-  const { username, password } = req.body
-  const db = await dbPromise
-  const user = await db.get('SELECT * FROM users WHERE username = ?', [username])
-  if (!user) return res.status(401).json({ message: 'User tidak ditemukan' })
-  const ok = await bcrypt.compare(password, user.password)
-  if (!ok) return res.status(401).json({ message: 'Password salah' })
-  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' })
-  res.json({ token, role: user.role })
-})
+  const { username, password } = req.body;
+  const user = await db('users').where({ username }).first();
+  if (!user) return res.status(401).json({ message: 'User not found' });
 
-app.get('/auth/me', authRequired, (req, res) => {
-  res.json({ id: req.user.id, role: req.user.role })
-})
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(401).json({ message: 'Invalid password' });
 
-// ========= Public GET (read) =========
-app.get('/residents', async (req, res) => {
-  const db = await dbPromise
-  const rows = await db.all('SELECT * FROM residents')
-  res.json(rows)
-})
-app.get('/payments', async (req, res) => {
-  const db = await dbPromise
-  const rows = await db.all('SELECT * FROM payments')
-  res.json(rows)
-})
-app.get('/expenses', async (req, res) => {
-  const db = await dbPromise
-  const rows = await db.all('SELECT * FROM expenses')
-  res.json(rows)
-})
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+  res.json({ token, role: user.role });
+});
 
-// ========= Write ops (admin only) =========
-app.post('/residents', authRequired, adminOnly, async (req, res) => {
-  const db = await dbPromise
-  const { id, name, address, phone } = req.body
-  await db.run('INSERT INTO residents VALUES (?,?,?,?)', [id, name, address, phone])
-  res.json({ ok: true })
-})
-app.put('/residents/:id', authRequired, adminOnly, async (req, res) => {
-  const db = await dbPromise
-  const { name, address, phone } = req.body
-  await db.run('UPDATE residents SET name=?, address=?, phone=? WHERE id=?', [name, address, phone, req.params.id])
-  res.json({ ok: true })
-})
-app.delete('/residents/:id', authRequired, adminOnly, async (req, res) => {
-  const db = await dbPromise
-  await db.run('DELETE FROM residents WHERE id=?', [req.params.id])
-  res.json({ ok: true })
-})
+// =============================
+// 🏠 Residents
+// =============================
+app.get('/residents', authMiddleware, async (req, res) => {
+  const rows = await db('residents').select('*').orderBy('name', 'asc');
+  res.json(rows);
+});
 
-app.post('/payments', authRequired, adminOnly, async (req, res) => {
-  const db = await dbPromise
-  const { id, residentId, date, type, amount, note } = req.body
-  await db.run('INSERT INTO payments VALUES (?,?,?,?,?,?)', [id, residentId, date, type, amount, note])
-  res.json({ ok: true })
-})
+app.post('/residents', authMiddleware, async (req, res) => {
+  const data = req.body;
+  await db('residents').insert(data);
+  res.json({ message: 'Resident added' });
+});
 
-app.post('/expenses', authRequired, adminOnly, async (req, res) => {
-  const db = await dbPromise
-  const { id, date, amount, note } = req.body
-  await db.run('INSERT INTO expenses VALUES (?,?,?,?)', [id, date, amount, note])
-  res.json({ ok: true })
-})
+app.put('/residents/:id', authMiddleware, async (req, res) => {
+  await db('residents').where({ id: req.params.id }).update(req.body);
+  res.json({ message: 'Resident updated' });
+});
 
-app.listen(4000, () => {
-  console.log('✅ Backend running on http://localhost:4000')
-})
+app.delete('/residents/:id', authMiddleware, async (req, res) => {
+  await db('residents').where({ id: req.params.id }).del();
+  res.json({ message: 'Resident deleted' });
+});
+
+// =============================
+// 💸 Payments
+// =============================
+app.get('/payments', authMiddleware, async (req, res) => {
+  const rows = await db('payments').select('*').orderBy('date', 'desc');
+  res.json(rows);
+});
+
+app.post('/payments', authMiddleware, async (req, res) => {
+  await db('payments').insert(req.body);
+  res.json({ message: 'Payment recorded' });
+});
+
+app.put('/payments/:id', authMiddleware, async (req, res) => {
+  await db('payments').where({ id: req.params.id }).update(req.body);
+  res.json({ message: 'Payment updated' });
+});
+
+app.delete('/payments/:id', authMiddleware, async (req, res) => {
+  await db('payments').where({ id: req.params.id }).del();
+  res.json({ message: 'Payment deleted' });
+});
+
+// =============================
+// 🧾 Expenses
+// =============================
+app.get('/expenses', authMiddleware, async (req, res) => {
+  const rows = await db('expenses').select('*').orderBy('date', 'desc');
+  res.json(rows);
+});
+
+app.post('/expenses', authMiddleware, async (req, res) => {
+  await db('expenses').insert(req.body);
+  res.json({ message: 'Expense recorded' });
+});
+
+app.put('/expenses/:id', authMiddleware, async (req, res) => {
+  await db('expenses').where({ id: req.params.id }).update(req.body);
+  res.json({ message: 'Expense updated' });
+});
+
+app.delete('/expenses/:id', authMiddleware, async (req, res) => {
+  await db('expenses').where({ id: req.params.id }).del();
+  res.json({ message: 'Expense deleted' });
+});
+
+// =============================
+// 🟢 Start Server
+// =============================
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
