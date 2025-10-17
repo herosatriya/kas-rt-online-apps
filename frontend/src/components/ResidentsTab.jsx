@@ -1,24 +1,14 @@
-import { Button, Heading, Input, Stack, Table, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
+import { Table, Thead, Tbody, Tr, Th, Td, Button, Stack, Input } from '@chakra-ui/react';
 import { useState, useMemo } from 'react';
 import axios from 'axios';
-import { formatCurrency } from '../utils/formatUtils.js';
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-export default function ResidentsTab({ residents, setResidents }) {
+export default function ResidentsTab({ residents, setResidents, API_URL }) {
   const [newResident, setNewResident] = useState({ name: '', address: '', phone: '' });
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
 
-  function handleSort(key) {
-    setSortConfig(prev =>
-      prev.key === key
-        ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
-        : { key, direction: 'asc' }
-    );
-  }
-
   const sortedResidents = useMemo(() => {
     const data = [...residents];
+    if (!sortConfig.key) return data;
     return data.sort((a, b) => {
       const av = (a[sortConfig.key] ?? '').toString().toLowerCase();
       const bv = (b[sortConfig.key] ?? '').toString().toLowerCase();
@@ -28,36 +18,37 @@ export default function ResidentsTab({ residents, setResidents }) {
     });
   }, [residents, sortConfig]);
 
-  async function addResident() {
+  const handleSort = key => {
+    setSortConfig(prev =>
+      prev.key === key
+        ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: 'asc' }
+    );
+  };
+
+  const addResident = async () => {
     if (!newResident.name.trim()) return;
-    const newData = { id: crypto.randomUUID(), ...newResident };
-    setResidents([...residents, newData]);
-    await axios.post(`${API_URL}/residents`, newData);
+    const data = { id: crypto.randomUUID(), ...newResident };
+    setResidents([...residents, data]);
+    await axios.post(`${API_URL}/residents`, data);
     setNewResident({ name: '', address: '', phone: '' });
-  }
+  };
 
   return (
     <>
-      <Heading size="md" mb={4}>Data Warga</Heading>
-      <Stack direction={{ base: 'column', md: 'row' }} spacing={2} mb={4} align="stretch">
+      <Stack direction={{ base: 'column', md: 'row' }} spacing={2} mb={4}>
         <Input placeholder="Nama" value={newResident.name} onChange={e => setNewResident({ ...newResident, name: e.target.value })} />
         <Input placeholder="Alamat" value={newResident.address} onChange={e => setNewResident({ ...newResident, address: e.target.value })} />
         <Input placeholder="Telepon" value={newResident.phone} onChange={e => setNewResident({ ...newResident, phone: e.target.value })} />
-        <Button colorScheme="teal" minW={{ base: '100%', md: '100px' }} onClick={addResident}>Tambah</Button>
+        <Button colorScheme="teal" onClick={addResident}>Tambah</Button>
       </Stack>
 
       <Table variant="striped" size="sm">
         <Thead>
           <Tr>
-            <Th cursor="pointer" onClick={() => handleSort('name')}>
-              Nama {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-            </Th>
-            <Th cursor="pointer" onClick={() => handleSort('address')}>
-              Alamat {sortConfig.key === 'address' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-            </Th>
-            <Th cursor="pointer" onClick={() => handleSort('phone')}>
-              Telepon {sortConfig.key === 'phone' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-            </Th>
+            <Th cursor="pointer" onClick={() => handleSort('name')}>Nama</Th>
+            <Th cursor="pointer" onClick={() => handleSort('address')}>Alamat</Th>
+            <Th cursor="pointer" onClick={() => handleSort('phone')}>Telepon</Th>
             <Th>Aksi</Th>
           </Tr>
         </Thead>

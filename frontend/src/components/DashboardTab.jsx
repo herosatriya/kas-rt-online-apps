@@ -1,17 +1,15 @@
-import {
-  Box, Heading, Table, Tbody, Td, Th, Thead, Tr, Stack
-} from '@chakra-ui/react';
-import { formatCurrency } from '../utils/formatUtils.js';
+import { Box, Heading, Table, Thead, Tbody, Tr, Th, Td, Text, Stack } from '@chakra-ui/react';
+import { formatCurrency } from '../utils/formatUtils';
 
-export default function DashboardTab({ residents, payments, expenses, initialCash, totalCash }) {
+export default function DashboardTab({ payments, expenses, residents, initialCash, totalCash }) {
   return (
-    <>
+    <Box>
       <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" mb={4}>
-        <p>Kas Awal: <b>Rp {formatCurrency(initialCash)}</b></p>
-        <p>Saldo Sekarang: <b>Rp {formatCurrency(totalCash())}</b></p>
+        <Text>Kas Awal: <b>Rp {formatCurrency(initialCash)}</b></Text>
+        <Text>Saldo Sekarang: <b>Rp {formatCurrency(totalCash())}</b></Text>
       </Box>
 
-      <Stack direction={{ base: "column", md: "row" }} spacing={6} mt={4}>
+      <Stack direction={{ base: 'column', md: 'row' }} spacing={6}>
         <Box flex="1">
           <Heading size="sm" mb={2}>📋 Pembayaran Terakhir</Heading>
           <Table size="sm" variant="striped">
@@ -60,6 +58,6 @@ export default function DashboardTab({ residents, payments, expenses, initialCas
           </Table>
         </Box>
       </Stack>
-    </>
+    </Box>
   );
 }
