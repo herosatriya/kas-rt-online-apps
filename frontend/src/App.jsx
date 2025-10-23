@@ -188,6 +188,7 @@ export default function App() {
                 setInitialCash={setInitialCash}
                 warningThreshold={warningThreshold}
                 setWarningThreshold={setWarningThreshold}
+                API_URL={API_URL}
               />
             )}
           </TabPanel>

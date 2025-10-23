@@ -7,7 +7,7 @@ export default function SettingsTab({
   setInitialCash,
   warningThreshold,
   setWarningThreshold,
-  API_URL={API_URL} 
+  API_URL
 }) {
   const toast = useToast();
 
