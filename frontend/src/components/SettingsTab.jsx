@@ -7,15 +7,15 @@ export default function SettingsTab({
   setInitialCash,
   warningThreshold,
   setWarningThreshold,
-  API_URL
+  API_URL={API_URL} 
 }) {
   const toast = useToast();
 
   const saveSettings = async (field, value) => {
     try {
       await axios.put(`${API_URL}/settings`, {
-        initial_cash: field === "initialCash" ? value : initialCash,
-        warning_threshold: field === "warningThreshold" ? value : warningThreshold
+        initialCash: field === "initialCash" ? value : initialCash,
+        warningThreshold: field === "warningThreshold" ? value : warningThreshold
       });
       toast({
         title: "Pengaturan tersimpan",

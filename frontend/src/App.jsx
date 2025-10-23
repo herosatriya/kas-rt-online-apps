@@ -79,8 +79,8 @@ export default function App() {
   // setelah state initialCash dan warningThreshold
   useEffect(() => {
     axios.get(`${API_URL}/settings`).then(res => {
-      setInitialCash(res.data.initial_cash);
-      setWarningThreshold(res.data.warning_threshold);
+      setInitialCash(res.data.initialCash);
+      setWarningThreshold(res.data.warningThreshold);
     });
   }, []);
 
