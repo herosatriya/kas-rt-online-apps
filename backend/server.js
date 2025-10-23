@@ -135,6 +135,36 @@ app.post('/expenses', async (req, res) => {
   }
 });
 
+// ⚙️ Settings API (Kas Awal dan Warning Threshold)
+app.get('/settings', async (req, res) => {
+  try {
+    const settings = await db('settings').first();
+    res.json(settings || { initialCash: 0, warningThreshold: 100000 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal mengambil data settings' });
+  }
+});
+
+app.put('/settings', async (req, res) => {
+  try {
+    const { initialCash, warningThreshold } = req.body;
+    const existing = await db('settings').first();
+
+    if (existing) {
+      await db('settings').update({ initialCash, warningThreshold });
+    } else {
+      await db('settings').insert({ initialCash, warningThreshold });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal update settings' });
+  }
+});
+
+
 // 🚀 Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
